@@ -1,0 +1,7 @@
+# Modelo CSV RankLei para importacao em massa
+# Use ponto e virgula como separador. Mantenha a linha de cabecalho abaixo.
+# Campos obrigatorios: pergunta e resposta. A resposta deve ser Certo ou Errado.
+# Se disciplina, assunto ou subassunto nao existirem, o painel cria automaticamente.
+# Campos de filtro: codigo_lei, artigo, disciplina, assunto, subassunto, ano, instituicao, cargo.
+id;numero;pergunta;resposta;explicacao;codigo_lei;artigo;disciplina;assunto;subassunto;ano;instituicao;cargo
+;;"Cole aqui o enunciado da questao";Certo;"Explique o gabarito ou cole o comentario oficial";CF;"Art. 37";"Direito Constitucional";"Administracao Publica";"Principios da Administracao";2024;"TJ-CE";"Analista"
