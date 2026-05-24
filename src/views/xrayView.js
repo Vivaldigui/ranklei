@@ -36,7 +36,7 @@ export function renderXray(state) {
             .slice(0, 6)
             .map((question) => {
               const stats = getQuestionStats(question, state.appData.questionStats);
-              return `<p class="xray-line"><strong>${question.article}</strong><span>${difficultyLabel(stats.difficulty)}</span></p>`;
+              return `<p class="xray-line"><strong>${[question.article, question.paragraph, question.inciso].filter(Boolean).join(" ") || "Sem artigo"}</strong><span>${difficultyLabel(stats.difficulty)}</span></p>`;
             })
             .join("")}
         </div>

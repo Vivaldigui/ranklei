@@ -99,6 +99,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 a {
   color: inherit;
 }
@@ -180,6 +185,30 @@ small {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.mobile-study-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mobile-study-controls .secondary-button.active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.focus-stepper {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  padding: 0 8px;
 }
 
 .hero-section {
@@ -902,6 +931,11 @@ a svg {
   gap: 28px;
 }
 
+.focus-list {
+  max-width: 860px;
+  margin-inline: auto;
+}
+
 .question-card {
   padding: 16px;
 }
@@ -1307,6 +1341,75 @@ a svg {
     align-items: stretch;
     flex-direction: column;
   }
+
+  .filters-panel.mobile-collapsed {
+    display: none;
+  }
+
+  .mobile-study-controls {
+    position: sticky;
+    top: 70px;
+    z-index: 12;
+    margin: -6px 0 2px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--topbar-bg);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-study-controls > .secondary-button {
+    flex: 1 1 140px;
+  }
+
+  .focus-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .question-card {
+    min-height: calc(100vh - 190px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .question-head {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .question-number {
+    width: 34px;
+    height: 34px;
+  }
+
+  .statement {
+    font-size: 1.08rem;
+  }
+
+  .true-false-options {
+    margin-top: auto;
+  }
+
+  .tf-option {
+    min-height: 58px;
+    font-size: 1rem;
+  }
+
+  .answer-button {
+    min-height: 54px;
+    font-size: 1.02rem;
+  }
+
+  .question-actions-footer {
+    overflow-x: auto;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+  }
+
+  .question-actions-footer button {
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 620px) {
@@ -1335,7 +1438,7 @@ a svg {
 
   .question-actions-footer {
     align-items: stretch;
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .primary-button,

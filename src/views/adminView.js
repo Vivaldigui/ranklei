@@ -33,6 +33,8 @@ export function renderAdmin(state) {
           ${inputField({ label: "ID", name: "id", placeholder: "q-novo-artigo" })}
           ${selectField({ label: "Codigo/Lei", name: "lawCode", options: tax.lawCodes.map((item) => ({ value: item.id, label: item.name })), placeholder: "Codigo/Lei" })}
           ${inputField({ label: "Artigo", name: "article", placeholder: "Art. 9" })}
+          ${inputField({ label: "Paragrafo", name: "paragraph", placeholder: "§ 1º" })}
+          ${inputField({ label: "Inciso", name: "inciso", placeholder: "I" })}
           ${selectField({ label: "Disciplina", name: "disciplineId", options: tax.disciplines.map((item) => ({ value: item.id, label: item.name })), placeholder: "Disciplina" })}
           ${selectField({ label: "Assunto", name: "subjectId", options: tax.subjects.map((item) => ({ value: item.id, label: item.name })), placeholder: "Assunto" })}
           ${selectField({ label: "Subassunto", name: "subSubjectId", options: tax.subSubjects.map((item) => ({ value: item.id, label: item.name })), placeholder: "Subassunto" })}
@@ -63,15 +65,16 @@ export function renderAdmin(state) {
       <section class="panel">
         <div class="panel-title">
           <h3>Questoes</h3>
-          <span>${state.appData.questions.length}</span>
+          <button class="ghost-danger" data-action="clear-all-questions" type="button">${icon("trash-2")}Apagar todas</button>
         </div>
+        <p class="bulk-help">${state.appData.questions.length} questoes cadastradas. A limpeza remove questoes e estatisticas do Firebase.</p>
         <div class="admin-list">
           ${state.appData.questions
             .map(
               (question) => `
           <article class="admin-row">
             <div>
-              <strong>#${question.number} ${escapeHtml(question.article)}</strong>
+              <strong>#${question.number} ${escapeHtml(renderQuestionLocator(question))}</strong>
               <small>${escapeHtml(resolveName(tax.disciplines, question.disciplineId))} / ${escapeHtml(question.institution || "Sem instituicao")}</small>
             </div>
             <button class="ghost-danger" data-action="delete-admin-question" data-question-id="${question.id}">${icon("trash-2")}</button>
@@ -127,16 +130,29 @@ export function renderAdmin(state) {
             <span>Arquivo opcional</span>
             <input name="bulkFile" type="file" accept=".txt,.csv,.tsv,.json,text/plain,text/csv,application/json" />
           </label>
+          <div class="filters-grid">
+            ${selectField({ label: "Codigo/Lei padrao", name: "defaultLawCode", options: tax.lawCodes.map((item) => ({ value: item.id, label: item.name })), placeholder: "Opcional" })}
+            ${inputField({ label: "Artigo padrao", name: "defaultArticle", placeholder: "Art. 12" })}
+            ${inputField({ label: "Paragrafo padrao", name: "defaultParagraph", placeholder: "§ 1º" })}
+            ${inputField({ label: "Inciso padrao", name: "defaultInciso", placeholder: "I" })}
+            ${selectField({ label: "Disciplina padrao", name: "defaultDisciplineId", options: tax.disciplines.map((item) => ({ value: item.id, label: item.name })), placeholder: "Opcional" })}
+            ${selectField({ label: "Assunto padrao", name: "defaultSubjectId", options: tax.subjects.map((item) => ({ value: item.id, label: item.name })), placeholder: "Opcional" })}
+            ${selectField({ label: "Subassunto padrao", name: "defaultSubSubjectId", options: tax.subSubjects.map((item) => ({ value: item.id, label: item.name })), placeholder: "Opcional" })}
+          </div>
           <label class="field">
             <span>Conteudo do lote</span>
-            <textarea name="bulkText" rows="10" placeholder="CSV RankLei: id;numero;pergunta;resposta;explicacao;codigo_lei;artigo;disciplina;assunto;subassunto;ano;instituicao;cargo&#10;A resposta deve ser Certo ou Errado.&#10;Tambem aceita Anki TSV e JSON."></textarea>
+            <textarea name="bulkText" rows="10" placeholder="CSV/TSV RankLei: id;numero;pergunta;resposta;explicacao;codigo_lei;artigo;paragrafo;inciso;disciplina;assunto;subassunto;ano;instituicao;cargo&#10;A resposta deve ser Certo ou Errado.&#10;Tambem aceita TSV do Anki. Se o arquivo nao trouxer filtros, use os padroes acima."></textarea>
           </label>
-          <p class="bulk-help">Gabaritos aceitos: Verdadeiro/Certo/Correto/True/V/C/1 ou Falso/Errado/Incorreto/False/F/E/0. Se disciplina, assunto, subassunto ou codigo/lei nao existirem, o painel cadastra automaticamente.</p>
+          <p class="bulk-help">Gabaritos aceitos: Verdadeiro/Certo/Correto/True/V/C/1 ou Falso/Errado/Incorreto/False/F/E/0. Se disciplina, assunto, subassunto ou codigo/lei nao existirem, o painel cadastra automaticamente. Para Portugues, deixe Codigo/Lei, Artigo, Paragrafo e Inciso vazios.</p>
           <button class="primary-button" type="submit">${icon("upload")}Importar lote</button>
         </form>
       </section>
     </div>
   `;
+}
+
+function renderQuestionLocator(question) {
+  return [question.article, question.paragraph, question.inciso].filter(Boolean).join(" ") || "Sem artigo";
 }
 
 function renderTaxonomyColumn(title, items) {

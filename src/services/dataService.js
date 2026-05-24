@@ -1,8 +1,7 @@
-import { mockQuestions } from "../data/mockQuestions.js";
 import { disciplines, lawCodes, materials, mockRankingUsers, positions, subjects, subSubjects } from "../data/catalog.js";
 import { getFirebaseContext, isAdminUser } from "./authService.js";
 
-const APP_VERSION = 3;
+const APP_VERSION = 4;
 
 export async function loadUserData(user) {
   const local = readLocalData(user);
@@ -34,12 +33,36 @@ export async function deleteQuestionFromCloud(user, questionId) {
   }
 }
 
+export async function deleteAllQuestionsFromCloud(user) {
+  const { firebaseReady, storeApi, db } = getFirebaseContext();
+  if (!firebaseReady || !storeApi || !db || !isAdminUser(user)) {
+    throw new Error("A limpeza exige login administrativo no Firebase.");
+  }
+
+  const [questionsSnap, statsSnap] = await Promise.all([
+    storeApi.getDocs(storeApi.collection(db, "questions")),
+    storeApi.getDocs(storeApi.collection(db, "questionStats"))
+  ]);
+  const refs = [
+    ...questionsSnap.docs.map((docSnap) => docSnap.ref),
+    ...statsSnap.docs.map((docSnap) => docSnap.ref)
+  ];
+
+  for (let index = 0; index < refs.length; index += 450) {
+    const batch = storeApi.writeBatch(db);
+    refs.slice(index, index + 450).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+
+  return { questions: questionsSnap.size, stats: statsSnap.size };
+}
+
 export function normalizeAppData(data = {}) {
   data = data || {};
   return {
     version: APP_VERSION,
     questions: normalizeQuestions(data.questions),
-    questionStats: data.questionStats || questionStatsFromQuestions(data.questions || mockQuestions),
+    questionStats: data.questionStats || questionStatsFromQuestions(data.questions || []),
     answers: Array.isArray(data.answers) ? data.answers : [],
     notebooks: Array.isArray(data.notebooks) ? data.notebooks : [],
     savedFilters: Array.isArray(data.savedFilters) ? data.savedFilters : [],
@@ -63,8 +86,7 @@ export function normalizeAppData(data = {}) {
 }
 
 function normalizeQuestions(questions = []) {
-  const source = questions.length ? questions : mockQuestions;
-  return source
+  return questions
     .filter((question) => !question.type || question.type === "true_false")
     .map((question, index) => ({
       ...question,
@@ -223,7 +245,7 @@ function normalizeTaxonomies(input = {}) {
 }
 
 function storageKey(user) {
-  return `ranklei.v3.${user?.id || "guest"}`;
+  return `ranklei.v4.${user?.id || "guest"}`;
 }
 
 function mergeById(items) {

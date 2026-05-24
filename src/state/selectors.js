@@ -63,6 +63,7 @@ export function getFilteredQuestionResults(state) {
 
   return {
     total: questions.length,
+    allQuestions: questions,
     questions: questions.slice(0, Number(filters.pageSize || 10))
   };
 }
@@ -111,11 +112,12 @@ export function getTaxonomyOptions(state, field) {
 export function getLawXrayRows(state) {
   const rows = new Map();
   state.appData.questions.forEach((question) => {
-    const key = `${question.lawCode}:${question.article}`;
+    const locator = questionLocator(question);
+    const key = `${question.lawCode}:${locator}`;
     const current = rows.get(key) || {
       key,
       lawCode: question.lawCode,
-      article: question.article,
+      article: locator,
       totalQuestions: 0,
       correct: 0,
       answered: 0,
@@ -146,6 +148,8 @@ function compareQuestionsByArticle(a, b) {
     String(a.lawCode || "").localeCompare(String(b.lawCode || ""), "pt-BR") ||
     articleNumber(a.article) - articleNumber(b.article) ||
     articleSuffix(a.article).localeCompare(articleSuffix(b.article), "pt-BR", { numeric: true }) ||
+    extractNumber(a.paragraph) - extractNumber(b.paragraph) ||
+    extractRoman(a.inciso) - extractRoman(b.inciso) ||
     Number(a.number || 0) - Number(b.number || 0)
   );
 }
@@ -164,4 +168,24 @@ function articleNumber(article) {
 
 function articleSuffix(article) {
   return String(article || "").replace(/^\D*\d+\D*/i, "");
+}
+
+function extractNumber(value) {
+  const match = String(value || "").match(/(\d+)/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+
+function extractRoman(value) {
+  const roman = String(value || "").trim().toUpperCase().match(/^[IVXLCDM]+/)?.[0];
+  if (!roman) return Number.MAX_SAFE_INTEGER;
+  const values = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  return roman.split("").reduce((total, char, index, chars) => {
+    const current = values[char] || 0;
+    const next = values[chars[index + 1]] || 0;
+    return total + (current < next ? -current : current);
+  }, 0);
+}
+
+function questionLocator(question) {
+  return [question.article, question.paragraph, question.inciso].filter(Boolean).join(" ") || "Sem artigo";
 }

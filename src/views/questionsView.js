@@ -5,7 +5,9 @@ import { getFilteredQuestionResults, getLastAnswerForQuestion, getTaxonomyOption
 
 export function renderQuestions(state) {
   const result = getFilteredQuestionResults(state);
-  const questions = result.questions;
+  const allQuestions = result.allQuestions || result.questions;
+  const focusIndex = Math.min(Math.max(0, state.focusIndex || 0), Math.max(0, allQuestions.length - 1));
+  const questions = state.focusMode ? allQuestions.slice(focusIndex, focusIndex + 1) : result.questions;
   return `
     <div class="page-grid">
       <section class="page-heading">
@@ -16,10 +18,24 @@ export function renderQuestions(state) {
         </div>
       </section>
 
+      <section class="mobile-study-controls span-3" data-total="${allQuestions.length}">
+        <button class="secondary-button" type="button" data-action="toggle-filters-panel">${icon("sliders-horizontal")}Filtros</button>
+        <button class="secondary-button ${state.focusMode ? "active" : ""}" type="button" data-action="toggle-focus-mode">${icon("scan-eye")}Modo foco</button>
+        ${
+          state.focusMode
+            ? `<div class="focus-stepper">
+                <button class="icon-button" type="button" data-action="focus-prev" ${focusIndex <= 0 ? "disabled" : ""}>${icon("chevron-left")}</button>
+                <strong>${allQuestions.length ? focusIndex + 1 : 0}/${allQuestions.length}</strong>
+                <button class="icon-button" type="button" data-action="focus-next" ${focusIndex >= allQuestions.length - 1 ? "disabled" : ""}>${icon("chevron-right")}</button>
+              </div>`
+            : ""
+        }
+      </section>
+
       ${renderFilters(state)}
 
       <section class="question-toolbar-panel">
-        <div><strong>${result.total}</strong><span>questoes encontradas</span><small>Exibindo ${questions.length} nesta pagina</small></div>
+        <div><strong>${result.total}</strong><span>questoes encontradas</span><small>${state.focusMode ? "Modo foco ativo: deslize para o lado para trocar." : `Exibindo ${questions.length} nesta pagina`}</small></div>
         <div class="reader-tools">
           <button class="icon-button" title="Aumentar fonte">${icon("type")}</button>
           <button class="icon-button" title="Imprimir">${icon("printer")}</button>
@@ -32,7 +48,7 @@ export function renderQuestions(state) {
         </div>
       </section>
 
-      <section class="question-list span-3">
+      <section class="question-list span-3 ${state.focusMode ? "focus-list" : ""}" data-swipe-zone="questions" data-total="${allQuestions.length}">
         ${questions.length ? questions.map((question) => renderQuestionCard(state, question)).join("") : emptyState("Nenhuma questao encontrada para os filtros aplicados.")}
       </section>
     </div>
@@ -51,7 +67,7 @@ function renderFilters(state) {
     .map((sub) => ({ value: sub.id, label: sub.name }));
 
   return `
-    <form class="filters-panel span-3" data-form="filters">
+    <form class="filters-panel span-3 ${state.filtersOpen ? "" : "mobile-collapsed"}" data-form="filters">
       <div class="filters-grid">
         ${selectField({ label: "Filtro salvo", name: "savedFilterId", value: filters.savedFilterId, options: savedOptions, placeholder: "Selecione um filtro salvo" })}
         ${selectField({ label: "Codigo/Lei", name: "lawCode", value: filters.lawCode, options: tax.lawCodes.map((item) => ({ value: item.id, label: item.name })), placeholder: "Codigo/Lei" })}
@@ -132,7 +148,7 @@ function renderQuestionCard(state, question) {
       <div class="question-head">
         <span class="question-number">${question.number}</span>
         <div>
-          <strong>[${escapeHtml(question.article || "-")}] ${escapeHtml(resolveName(state.appData.taxonomies.lawCodes, question.lawCode))} | ${escapeHtml(question.institution || "Instituicao")} ${question.year}</strong>
+          <strong>[${escapeHtml(questionLocator(question))}] ${escapeHtml(resolveName(state.appData.taxonomies.lawCodes, question.lawCode))} | ${escapeHtml(question.institution || "Instituicao")} ${question.year}</strong>
           <div class="question-meta-line">
             ${badge(resolveName(state.appData.taxonomies.disciplines, question.disciplineId), "blue")}
             ${badge(resolveName(state.appData.taxonomies.subjects, question.subjectId), "neutral")}
@@ -174,6 +190,10 @@ function renderQuestionCard(state, question) {
       ${renderPanels(state, question, comments, stats)}
     </article>
   `;
+}
+
+function questionLocator(question) {
+  return [question.article, question.paragraph, question.inciso].filter(Boolean).join(" ") || "Sem artigo";
 }
 
 function renderOption(questionId, value, selected) {

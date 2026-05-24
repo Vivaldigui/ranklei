@@ -32,6 +32,9 @@ let state = {
   filters: { ...defaultFilters },
   rankingPeriod: "all",
   activeQuestionId: "",
+  filtersOpen: false,
+  focusMode: false,
+  focusIndex: 0,
   questionTimers: {},
   selectedAnswers: {},
   expandedPanels: {},
@@ -89,6 +92,23 @@ export function setRankingPeriod(rankingPeriod) {
   notify();
 }
 
+export function toggleFiltersPanel() {
+  state = { ...state, filtersOpen: !state.filtersOpen };
+  notify();
+}
+
+export function toggleFocusMode() {
+  state = { ...state, focusMode: !state.focusMode, focusIndex: 0 };
+  notify();
+}
+
+export function moveFocusQuestion(direction, total = state.appData.questions.length) {
+  const max = Math.max(0, Number(total || 0) - 1);
+  const nextIndex = Math.min(max, Math.max(0, state.focusIndex + direction));
+  state = { ...state, focusIndex: nextIndex };
+  notify();
+}
+
 export function togglePanel(panelId) {
   state = {
     ...state,
@@ -124,24 +144,24 @@ export function clearHistory() {
 }
 
 export function updateFilter(name, value) {
-  state = { ...state, filters: { ...state.filters, [name]: value } };
+  state = { ...state, filters: { ...state.filters, [name]: value }, focusIndex: 0 };
   notify();
 }
 
 export function setFilters(filters) {
-  state = { ...state, filters: { ...state.filters, ...filters } };
+  state = { ...state, filters: { ...state.filters, ...filters }, focusIndex: 0 };
   notify();
 }
 
 export function clearFilters() {
-  state = { ...state, filters: { ...defaultFilters } };
+  state = { ...state, filters: { ...defaultFilters }, focusIndex: 0 };
   notify();
 }
 
 export function applySavedFilter(savedFilterId) {
   const saved = state.appData.savedFilters.find((filter) => filter.id === savedFilterId);
   if (!saved) return;
-  state = { ...state, filters: { ...defaultFilters, ...saved.filters, savedFilterId } };
+  state = { ...state, filters: { ...defaultFilters, ...saved.filters, savedFilterId }, focusIndex: 0 };
   notify();
 }
 
@@ -323,6 +343,24 @@ export function reportQuestion(questionId, description) {
   };
   state = { ...state, appData: { ...state.appData, reports: [report, ...state.appData.reports] } };
   persist();
+}
+
+export function clearAllQuestions() {
+  state = {
+    ...state,
+    appData: {
+      ...state.appData,
+      questions: [],
+      questionStats: {},
+      answers: [],
+      comments: state.appData.comments.filter((comment) => comment.isPrivate),
+      reports: []
+    },
+    selectedAnswers: {},
+    expandedPanels: {},
+    focusIndex: 0
+  };
+  return persist({ requireCloud: state.isAdmin });
 }
 
 export function upsertQuestion(question) {

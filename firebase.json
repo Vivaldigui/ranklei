@@ -9,6 +9,13 @@
       "server.js",
       "abrir-zzero.bat",
       "abrir-ranklei.bat",
+      "agendamentorg/**",
+      "camara-processos/**",
+      "itanhandu-transparente/**",
+      "INSTRUCOES.md",
+      "melhorias.css",
+      "melhorias.js",
+      "preview-*",
       "README.md",
       "firestore.rules"
     ],

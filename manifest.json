@@ -1,0 +1,17 @@
+{
+  "name": "RankLei",
+  "short_name": "RankLei",
+  "description": "Estudo de lei seca e questoes certo ou errado.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/ranklei-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

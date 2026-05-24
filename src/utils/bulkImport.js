@@ -5,13 +5,13 @@ const FALSE_WORDS = ["falso", "errado", "errada", "incorreto", "incorreta", "fal
 const TRUE_EXACT = [...TRUE_WORDS, "v", "c", "1"];
 const FALSE_EXACT = [...FALSE_WORDS, "f", "e", "0", "nao"];
 
-export function parseBulkQuestions(rawText, appData) {
-  return parseBulkQuestionsWithReport(rawText, appData).questions;
+export function parseBulkQuestions(rawText, appData, defaults = {}) {
+  return parseBulkQuestionsWithReport(rawText, appData, defaults).questions;
 }
 
-export function parseBulkQuestionsWithReport(rawText, appData) {
+export function parseBulkQuestionsWithReport(rawText, appData, defaults = {}) {
   const raw = String(rawText || "").trim();
-  const context = createImportContext(appData);
+  const context = createImportContext(appData, defaults);
   if (!raw) return { questions: [], taxonomies: context.taxonomies, createdTaxonomies: context.createdTaxonomies, totalRows: 0, skippedRows: 0 };
 
   if (raw.startsWith("[") || raw.startsWith("{")) {
@@ -67,6 +67,8 @@ function questionFromHeader(cells, headers, appData, index, context) {
       explanation: value(["explicacao", "comentario", "comentario_oficial", "explanation", "verso", "back"]),
       lawCode: value(["codigo_lei", "codigo", "lei", "lawcode", "law"]),
       article: value(["artigo", "article"]),
+      paragraph: value(["paragrafo", "paragraph", "§"]),
+      inciso: value(["inciso", "inc", "item"]),
       discipline: value(["disciplina", "discipline"]),
       subject: value(["assunto", "subject"]),
       subSubject: value(["subassunto", "subsubject"]),
@@ -93,12 +95,14 @@ function questionFromOrderedCells(cells, appData, index, context) {
       explanation: explanation || answerCell,
       lawCode: cells[3],
       article: cells[4],
-      discipline: cells[5],
-      subject: cells[6],
-      subSubject: cells[7],
-      year: cells[8],
-      institution: cells[9],
-      position: cells[10]
+      paragraph: cells[5],
+      inciso: cells[6],
+      discipline: cells[7],
+      subject: cells[8],
+      subSubject: cells[9],
+      year: cells[10],
+      institution: cells[11],
+      position: cells[12]
     },
     appData,
     index,
@@ -115,10 +119,10 @@ function normalizeImportedQuestion(item, appData, index, context = createImportC
 
   const tax = context.taxonomies;
   const explicitId = clean(item.id);
-  const lawCode = ensureTaxonomyItem(tax, "lawCodes", item.lawCode || item.codigo || item.codigoLei || item.lei || item.law, "cf", {}, context);
-  const disciplineId = ensureTaxonomyItem(tax, "disciplines", item.disciplineId || item.discipline || item.disciplina, tax.disciplines[0]?.id || "geral", {}, context);
-  const subjectId = ensureSubject(tax, disciplineId, item.subjectId || item.subject || item.assunto, context);
-  const subSubjectId = ensureSubSubject(tax, subjectId, item.subSubjectId || item.subSubject || item.subassunto, context);
+  const lawCode = ensureTaxonomyItem(tax, "lawCodes", item.lawCode || item.codigo || item.codigoLei || item.lei || item.law || context.defaults.lawCode, "", {}, context);
+  const disciplineId = ensureTaxonomyItem(tax, "disciplines", item.disciplineId || item.discipline || item.disciplina || context.defaults.disciplineId, tax.disciplines[0]?.id || "geral", {}, context);
+  const subjectId = ensureSubject(tax, disciplineId, item.subjectId || item.subject || item.assunto || context.defaults.subjectId, context);
+  const subSubjectId = ensureSubSubject(tax, subjectId, item.subSubjectId || item.subSubject || item.subassunto || context.defaults.subSubjectId, context);
   const now = new Date().toISOString();
 
   return {
@@ -126,7 +130,9 @@ function normalizeImportedQuestion(item, appData, index, context = createImportC
     type: "true_false",
     number: Number(item.number || item.numero || 0) || appData.questions.length + index + 1,
     lawCode,
-    article: clean(item.article || item.artigo) || "Artigo nao informado",
+    article: clean(item.article || item.artigo || context.defaults.article),
+    paragraph: clean(item.paragraph || item.paragrafo || context.defaults.paragraph),
+    inciso: clean(item.inciso || item.inc || context.defaults.inciso),
     disciplineId,
     subjectId,
     subSubjectId,
@@ -236,8 +242,9 @@ function splitDelimitedLine(line, delimiter) {
   return cells;
 }
 
-function createImportContext(appData) {
+function createImportContext(appData, defaults = {}) {
   return {
+    defaults,
     taxonomies: cloneTaxonomies(appData.taxonomies || {}),
     createdTaxonomies: {
       disciplines: 0,

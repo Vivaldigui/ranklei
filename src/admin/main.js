@@ -1,9 +1,10 @@
 import { initAuth, isAdminUser, logout, onAuthChange, signInAdminWithEmail } from "../services/authService.js";
-import { deleteQuestionFromCloud, loadUserData } from "../services/dataService.js";
+import { deleteAllQuestionsFromCloud, deleteQuestionFromCloud, loadUserData } from "../services/dataService.js";
 import {
   addDiscipline,
   addSubject,
   addSubSubject,
+  clearAllQuestions,
   deleteQuestion,
   getState,
   importQuestionsBatch,
@@ -188,6 +189,21 @@ async function handleClick(event) {
     await deleteQuestionFromCloud(user, questionId);
     showToast("Questao excluida.");
   }
+
+  const clearAllButton = event.target.closest("[data-action='clear-all-questions']");
+  if (clearAllButton) {
+    const confirmation = window.prompt("Digite APAGAR para remover todas as questoes e estatisticas do Firebase:");
+    if (confirmation !== "APAGAR") return;
+    try {
+      const user = getState().user;
+      const removed = await deleteAllQuestionsFromCloud(user);
+      await clearAllQuestions();
+      showToast(`${removed.questions} questoes e ${removed.stats} estatisticas apagadas.`);
+    } catch (error) {
+      console.error(error);
+      showToast("Nao foi possivel apagar o banco de questoes.");
+    }
+  }
 }
 
 async function runAdminAuth(email, password) {
@@ -215,6 +231,8 @@ function saveQuestion(form) {
     number: getState().appData.questions.length + 1,
     lawCode: data.lawCode,
     article: data.article,
+    paragraph: data.paragraph || "",
+    inciso: data.inciso || "",
     disciplineId: data.disciplineId,
     subjectId: data.subjectId,
     subSubjectId: data.subSubjectId,
@@ -257,7 +275,15 @@ async function importBulk(form) {
   const file = form.querySelector('input[name="bulkFile"]')?.files?.[0];
   try {
     const source = file ? await file.text() : data.bulkText;
-    const result = parseBulkQuestionsWithReport(source, getState().appData);
+    const result = parseBulkQuestionsWithReport(source, getState().appData, {
+      lawCode: data.defaultLawCode || "",
+      article: data.defaultArticle || "",
+      paragraph: data.defaultParagraph || "",
+      inciso: data.defaultInciso || "",
+      disciplineId: data.defaultDisciplineId || "",
+      subjectId: data.defaultSubjectId || "",
+      subSubjectId: data.defaultSubSubjectId || ""
+    });
     if (!result.questions.length) {
       showToast("Nenhuma questao valida encontrada no lote.");
       return;

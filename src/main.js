@@ -10,6 +10,7 @@ import {
   createNotebook,
   deleteSavedFilter,
   getState,
+  moveFocusQuestion,
   reportQuestion,
   saveCurrentFilter,
   setAuthMode,
@@ -19,6 +20,8 @@ import {
   setUser,
   subscribe,
   toggleDrawer,
+  toggleFiltersPanel,
+  toggleFocusMode,
   toggleTheme,
   togglePanel,
   updateFilter
@@ -39,6 +42,7 @@ const toast = document.getElementById("toast");
 bootstrap();
 
 async function bootstrap() {
+  registerServiceWorker();
   subscribe(renderApp);
   bindGlobalEvents();
   await initAuth();
@@ -51,6 +55,15 @@ async function bootstrap() {
     setUser(user, data);
   });
   renderApp(getState());
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((error) => {
+      console.warn("Service worker indisponivel.", error);
+    });
+  });
 }
 
 function renderApp(state) {
@@ -80,6 +93,8 @@ function bindGlobalEvents() {
   document.addEventListener("click", handleClick);
   document.addEventListener("submit", handleSubmit);
   document.addEventListener("change", handleChange);
+  document.addEventListener("touchstart", handleTouchStart, { passive: true });
+  document.addEventListener("touchend", handleTouchEnd, { passive: true });
 }
 
 async function handleClick(event) {
@@ -118,6 +133,10 @@ async function handleClick(event) {
 
   const action = actionButton.dataset.action;
   if (action === "toggle-drawer") toggleDrawer();
+  if (action === "toggle-filters-panel") toggleFiltersPanel();
+  if (action === "toggle-focus-mode") toggleFocusMode();
+  if (action === "focus-prev") moveFocusQuestion(-1, Number(actionButton.closest("[data-total]")?.dataset.total || 0));
+  if (action === "focus-next") moveFocusQuestion(1, Number(actionButton.closest("[data-total]")?.dataset.total || 0));
   if (action === "toggle-theme") toggleTheme();
   if (action === "logout") await logout();
   if (action === "google-login") await runAuth(() => signInWithGoogle());
@@ -188,6 +207,28 @@ function handleChange(event) {
     updateFilter(name, value);
   }
 
+}
+
+let touchStart = null;
+
+function handleTouchStart(event) {
+  const zone = event.target.closest("[data-swipe-zone='questions']");
+  if (!zone || !getState().focusMode) return;
+  const touch = event.changedTouches?.[0];
+  if (!touch) return;
+  touchStart = { x: touch.clientX, y: touch.clientY, total: Number(zone.dataset.total || 0) };
+}
+
+function handleTouchEnd(event) {
+  if (!touchStart || !getState().focusMode) return;
+  const touch = event.changedTouches?.[0];
+  if (!touch) return;
+  const dx = touch.clientX - touchStart.x;
+  const dy = touch.clientY - touchStart.y;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+    moveFocusQuestion(dx < 0 ? 1 : -1, touchStart.total);
+  }
+  touchStart = null;
 }
 
 function saveFilter() {
